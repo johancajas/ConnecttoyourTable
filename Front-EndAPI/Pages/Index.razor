@@ -1,0 +1,29 @@
+﻿@page "/"
+
+@inherits IndexBase
+
+<h3>Characters</h3>
+
+@if (Characters == null)
+{
+    <p>Loading...</p>
+}
+else if (Characters.Count == 0)
+{
+    <p>No characters found.</p>
+}
+else
+{
+    foreach (var character in Characters)
+    {
+        <div class="mb-3">
+            <p><strong>ID:</strong> @character.Id</p>
+            <p><strong>Name:</strong> @character.Name</p>
+            <p><strong>Class:</strong> @character.Class</p>
+        </div>
+    }
+}
+
+<button class="btn btn-primary" @onclick="LoadCharacters">
+    Reload
+</button>
