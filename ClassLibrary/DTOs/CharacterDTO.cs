@@ -13,9 +13,10 @@
     // Think of DTOs as your API contract.
     //
 
+    // uodate this so we can can make it concet it my data base 
     public class CharacterDTO
     {
-        public Guid Id { get; set; }
+        public int Id { get; set; }
 
         public string Name { get; set; } = string.Empty;
 

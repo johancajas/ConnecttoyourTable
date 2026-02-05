@@ -56,7 +56,7 @@ public class CharacterService
         // Create a SQL command
         using var cmd = conn.CreateCommand();
         cmd.CommandText = """
-            SELECT hero_id, name, class, level, health, mana
+            SELECT character_id, name, class, level, health, mana
             FROM character
         """;
 
@@ -66,7 +66,7 @@ public class CharacterService
         {
             results.Add(new CharacterDTO
             {
-                Id = reader.GetGuid(0),
+                Id = reader.GetInt32(0),
                 Name = reader.GetString(1),
                 Class = reader.GetString(2),
                 Level = reader.GetInt32(3),

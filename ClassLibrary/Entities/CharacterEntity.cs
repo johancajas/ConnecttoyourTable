@@ -16,12 +16,16 @@ namespace ClassLibrary.Entities
     // Changing this class usually means changing the database.
     //
 
+    // uodate this so we can can make it concet it my data base 
+
+
     [Table("character")] // Maps this class to the "character" table
     public class CharacterEntity
     {
         [Key] // Primary key
-        [Column("hero_id")]
-        public Guid Id { get; set; }
+        [Column("character_id")]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
 
         [Column("name")]
         public string Name { get; set; } = string.Empty;
