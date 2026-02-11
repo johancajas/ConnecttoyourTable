@@ -29,7 +29,7 @@ public class CharacterController : ControllerBase
     }
 
     // GET: api/characters
-    // Returns a list of characters to the client
+    // Returns a list of all characters
     [HttpGet]
     public async Task<ActionResult<List<CharacterDTO>>> GetCharacters()
     {
@@ -38,5 +38,61 @@ public class CharacterController : ControllerBase
 
         // Return HTTP 200 OK with JSON data
         return Ok(characters);
+    }
+
+    // GET: api/characters/{id}
+    // Returns a single character by ID
+    [HttpGet("{id}")]
+    public async Task<ActionResult<CharacterDTO>> GetCharacter(int id)
+    {
+        var character = await _characterService.GetCharacterByIdAsync(id);
+
+        if (character == null)
+            return NotFound(new { message = $"Character with ID {id} not found" });
+
+        return Ok(character);
+    }
+
+    // POST: api/characters
+    // Creates a new character
+    [HttpPost]
+    public async Task<ActionResult<CharacterDTO>> CreateCharacter([FromBody] CharacterDTO dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var created = await _characterService.CreateCharacterAsync(dto);
+
+        // Return HTTP 201 Created with location header
+        return CreatedAtAction(nameof(GetCharacter), new { id = created.Id }, created);
+    }
+
+    // PUT: api/characters/{id}
+    // Updates an existing character
+    [HttpPut("{id}")]
+    public async Task<ActionResult<CharacterDTO>> UpdateCharacter(int id, [FromBody] CharacterDTO dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var updated = await _characterService.UpdateCharacterAsync(id, dto);
+
+        if (updated == null)
+            return NotFound(new { message = $"Character with ID {id} not found" });
+
+        return Ok(updated);
+    }
+
+    // DELETE: api/characters/{id}
+    // Deletes a character
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> DeleteCharacter(int id)
+    {
+        var success = await _characterService.DeleteCharacterAsync(id);
+
+        if (!success)
+            return NotFound(new { message = $"Character with ID {id} not found" });
+
+        return NoContent(); // HTTP 204 No Content
     }
 }

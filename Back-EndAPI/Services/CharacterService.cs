@@ -1,4 +1,5 @@
 ﻿using ClassLibrary.DTOs;
+using ClassLibrary.Entities;
 using Microsoft.EntityFrameworkCore;
 
 //
@@ -25,6 +26,7 @@ public class CharacterService
         _db = db;
     }
 
+    // ========== READ (Get All) ==========
     // Returns characters as DTOs (not entities)
     public async Task<List<CharacterDTO>> GetCharactersAsync()
     {
@@ -41,6 +43,88 @@ public class CharacterService
                 Mana = e.Mana
             })
             .ToListAsync();
+    }
+
+    // ========== READ (Get By ID) ==========
+    // Returns a single character by ID
+    public async Task<CharacterDTO?> GetCharacterByIdAsync(int id)
+    {
+        return await _db.Characters
+            .Where(e => e.Id == id)
+            .Select(e => new CharacterDTO
+            {
+                Id = e.Id,
+                Name = e.Name,
+                Class = e.Class,
+                Level = e.Level,
+                Health = e.Health,
+                Mana = e.Mana
+            })
+            .FirstOrDefaultAsync();
+    }
+
+    // ========== CREATE ==========
+    // Adds a new character to the database
+    public async Task<CharacterDTO> CreateCharacterAsync(CharacterDTO dto)
+    {
+        var entity = new CharacterEntity
+        {
+            Name = dto.Name,
+            Class = dto.Class,
+            Level = dto.Level,
+            Health = dto.Health,
+            Mana = dto.Mana,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _db.Characters.Add(entity);
+        await _db.SaveChangesAsync();
+
+        // Return the created character with its new ID
+        dto.Id = entity.Id;
+        return dto;
+    }
+
+    // ========== UPDATE ==========
+    // Updates an existing character
+    public async Task<CharacterDTO?> UpdateCharacterAsync(int id, CharacterDTO dto)
+    {
+        var entity = await _db.Characters.FindAsync(id);
+        if (entity == null)
+            return null;
+
+        // Update properties
+        entity.Name = dto.Name;
+        entity.Class = dto.Class;
+        entity.Level = dto.Level;
+        entity.Health = dto.Health;
+        entity.Mana = dto.Mana;
+
+        await _db.SaveChangesAsync();
+
+        // Return updated DTO
+        return new CharacterDTO
+        {
+            Id = entity.Id,
+            Name = entity.Name,
+            Class = entity.Class,
+            Level = entity.Level,
+            Health = entity.Health,
+            Mana = entity.Mana
+        };
+    }
+
+    // ========== DELETE ==========
+    // Deletes a character by ID
+    public async Task<bool> DeleteCharacterAsync(int id)
+    {
+        var entity = await _db.Characters.FindAsync(id);
+        if (entity == null)
+            return false;
+
+        _db.Characters.Remove(entity);
+        await _db.SaveChangesAsync();
+        return true;
     }
 
     // Example: SAME DATA, but using raw SQL instead of EF LINQ
