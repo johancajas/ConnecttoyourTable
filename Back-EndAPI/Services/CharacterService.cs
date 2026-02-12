@@ -26,7 +26,6 @@ public class CharacterService
         _db = db;
     }
 
-    // ========== READ (Get All) ==========
     // Returns characters as DTOs (not entities)
     public async Task<List<CharacterDTO>> GetCharactersAsync()
     {
@@ -85,7 +84,6 @@ public class CharacterService
         return dto;
     }
 
-    // ========== UPDATE ==========
     // Updates an existing character
     public async Task<CharacterDTO?> UpdateCharacterAsync(int id, CharacterDTO dto)
     {

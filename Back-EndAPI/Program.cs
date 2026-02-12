@@ -21,8 +21,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection")
     ));
 
-// REGISTER YOUR HERO SERVICE
+// REGISTER YOUR SERVICES
 builder.Services.AddScoped<CharacterService>();
+builder.Services.AddScoped<EmployeeService>();
 
 
 

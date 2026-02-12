@@ -1,4 +1,5 @@
-﻿using ClassLibrary.Entities;
+﻿using ClassLibrary.DTOs;
+using ClassLibrary.Entities;
 using Microsoft.EntityFrameworkCore;
 
 //
@@ -18,11 +19,10 @@ using Microsoft.EntityFrameworkCore;
 public class AppDbContext : DbContext
 {
     // DbSet = a database table
-    // This tells EF Core there is a "character" table
     public DbSet<CharacterEntity> Characters => Set<CharacterEntity>();
+    public DbSet<EmployeeEntity> Employees => Set<EmployeeEntity>();
 
     // Constructor receives configuration options
-    // (connection string, provider, logging, etc.)
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
     {
