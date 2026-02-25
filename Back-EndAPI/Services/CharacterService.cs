@@ -1,6 +1,8 @@
 ﻿using ClassLibrary.DTOs;
 using ClassLibrary.Entities;
+using ClassLibrary.Enums;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 
 //
 // SERVICE ROLE
@@ -12,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 // - Decide WHAT data to fetch
 // - Decide HOW data is shaped
 // - Return DTOs (safe for UI)
+// - ENFORCE BUSINESS RULES AND VALIDATION
 //
 // This keeps controllers simple and testable.
 //
@@ -32,6 +35,7 @@ public class CharacterService
         // Query the database and PROJECT directly into DTOs
         // EF Core generates optimized SQL that selects only needed columns
         return await _db.Characters
+            .Where(e => !e.IsDeleted)
             .Select(e => new CharacterDTO
             {
                 Id = e.Id,
@@ -39,7 +43,8 @@ public class CharacterService
                 Class = e.Class,
                 Level = e.Level,
                 Health = e.Health,
-                Mana = e.Mana
+                Mana = e.Mana,
+                Gold = e.Gold
             })
             .ToListAsync();
     }
@@ -49,7 +54,7 @@ public class CharacterService
     public async Task<CharacterDTO?> GetCharacterByIdAsync(int id)
     {
         return await _db.Characters
-            .Where(e => e.Id == id)
+            .Where(e => e.Id == id && !e.IsDeleted)
             .Select(e => new CharacterDTO
             {
                 Id = e.Id,
@@ -57,13 +62,94 @@ public class CharacterService
                 Class = e.Class,
                 Level = e.Level,
                 Health = e.Health,
-                Mana = e.Mana
+                Mana = e.Mana,
+                Gold = e.Gold
             })
             .FirstOrDefaultAsync();
     }
 
-    // ========== CREATE ==========
-    // Adds a new character to the database
+    // ========== CREATE WITH VALIDATION ==========
+    // Creates a new character with full server-side validation
+    // Returns tuple: (success, errorMessage, characterDTO)
+    public async Task<(bool Success, string? ErrorMessage, CharacterDTO? Data)> CreateCharacterWithValidationAsync(CreateCharacterRequest request)
+    {
+        // STEP 1: NORMALIZE DATA (clean before validating)
+        var cleanedName = request.Name?.Trim() ?? string.Empty;
+        var cleanedClass = request.Class?.Trim() ?? string.Empty;
+
+        // STEP 2: VALIDATE NAME
+        // Guard clause: Name required
+        if (string.IsNullOrWhiteSpace(cleanedName))
+        {
+            return (false, "Name is required and cannot be empty.", null);
+        }
+
+        // Guard clause: Name max length
+        if (cleanedName.Length > 20)
+        {
+            return (false, "Name cannot exceed 20 characters.", null);
+        }
+
+        // Guard clause: Name alphanumeric only
+        if (!Regex.IsMatch(cleanedName, @"^[a-zA-Z0-9]+$"))
+        {
+            return (false, "Name can only contain letters and numbers.", null);
+        }
+
+        // STEP 3: VALIDATE CLASS (Enum)
+        // Parse class string to enum (case insensitive)
+        if (!Enum.TryParse<CharacterClass>(cleanedClass, ignoreCase: true, out var characterClass))
+        {
+            return (false, $"Invalid class. Must be one of: {string.Join(", ", Enum.GetNames<CharacterClass>())}.", null);
+        }
+
+        // STEP 4: VALIDATE LEVEL
+        // Guard clause: Level range
+        if (request.Level < 1 || request.Level > 50)
+        {
+            return (false, "Level must be between 1 and 50.", null);
+        }
+
+        // STEP 5: VALIDATE GOLD
+        // Guard clause: Gold range
+        if (request.Gold < 0 || request.Gold > 10000)
+        {
+            return (false, "Gold must be between 0 and 10,000.", null);
+        }
+
+        // STEP 6: CREATE ENTITY (set safe defaults)
+        var entity = new CharacterEntity
+        {
+            Name = cleanedName,
+            Class = characterClass.ToString(), // Store normalized enum value
+            Level = request.Level,
+            Gold = request.Gold,
+            Health = 100, // Default health
+            Mana = 100,   // Default mana
+            IsAdmin = false, // SECURITY: Never trust client
+            IsDeleted = false, // SECURITY: Never trust client
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _db.Characters.Add(entity);
+        await _db.SaveChangesAsync();
+
+        // STEP 7: Return cleaned DTO
+        var dto = new CharacterDTO
+        {
+            Id = entity.Id,
+            Name = entity.Name,
+            Class = entity.Class,
+            Level = entity.Level,
+            Health = entity.Health,
+            Mana = entity.Mana,
+            Gold = entity.Gold
+        };
+
+        return (true, null, dto);
+    }
+
+    // ========== LEGACY CREATE (for backward compatibility) ==========
     public async Task<CharacterDTO> CreateCharacterAsync(CharacterDTO dto)
     {
         var entity = new CharacterEntity
@@ -73,6 +159,9 @@ public class CharacterService
             Level = dto.Level,
             Health = dto.Health,
             Mana = dto.Mana,
+            Gold = dto.Gold,
+            IsAdmin = false,
+            IsDeleted = false,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -97,6 +186,7 @@ public class CharacterService
         entity.Level = dto.Level;
         entity.Health = dto.Health;
         entity.Mana = dto.Mana;
+        entity.Gold = dto.Gold;
 
         await _db.SaveChangesAsync();
 
@@ -108,7 +198,8 @@ public class CharacterService
             Class = entity.Class,
             Level = entity.Level,
             Health = entity.Health,
-            Mana = entity.Mana
+            Mana = entity.Mana,
+            Gold = entity.Gold
         };
     }
 
@@ -138,8 +229,9 @@ public class CharacterService
         // Create a SQL command
         using var cmd = conn.CreateCommand();
         cmd.CommandText = """
-            SELECT character_id, name, class, level, health, mana
+            SELECT character_id, name, class, level, health, mana, gold
             FROM character
+            WHERE is_deleted = false
         """;
 
         // Execute query and read results
@@ -153,7 +245,8 @@ public class CharacterService
                 Class = reader.GetString(2),
                 Level = reader.GetInt32(3),
                 Health = reader.GetInt32(4),
-                Mana = reader.GetInt32(5)
+                Mana = reader.GetInt32(5),
+                Gold = reader.GetInt32(6)
             });
         }
 

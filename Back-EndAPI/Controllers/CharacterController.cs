@@ -54,17 +54,22 @@ public class CharacterController : ControllerBase
     }
 
     // POST: api/characters
-    // Creates a new character
+    // Creates a new character with SERVER-SIDE VALIDATION
+    // This endpoint demonstrates why frontend validation is NOT enough
     [HttpPost]
-    public async Task<ActionResult<CharacterDTO>> CreateCharacter([FromBody] CharacterDTO dto)
+    public async Task<ActionResult<CharacterDTO>> CreateCharacter([FromBody] CreateCharacterRequest request)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        // Call service with validation logic
+        var (success, errorMessage, character) = await _characterService.CreateCharacterWithValidationAsync(request);
 
-        var created = await _characterService.CreateCharacterAsync(dto);
+        // If validation failed, return 400 Bad Request with error message
+        if (!success)
+        {
+            return BadRequest(new { error = errorMessage });
+        }
 
-        // Return HTTP 201 Created with location header
-        return CreatedAtAction(nameof(GetCharacter), new { id = created.Id }, created);
+        // Return 201 Created with the cleaned/normalized character
+        return CreatedAtAction(nameof(GetCharacter), new { id = character!.Id }, character);
     }
 
     // PUT: api/characters/{id}

@@ -27,5 +27,7 @@
         public int Health { get; set; }
 
         public int Mana { get; set; }
+
+        public int Gold { get; set; }
     }
 }

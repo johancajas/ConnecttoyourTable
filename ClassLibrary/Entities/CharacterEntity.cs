@@ -42,6 +42,16 @@ namespace ClassLibrary.Entities
         [Column("mana")]
         public int Mana { get; set; }
 
+        [Column("gold")]
+        public int Gold { get; set; }
+
+        // Security fields - NEVER exposed to client
+        [Column("is_admin")]
+        public bool IsAdmin { get; set; }
+
+        [Column("is_deleted")]
+        public bool IsDeleted { get; set; }
+
         // Exists in the database but NOT exposed to the client
         [Column("created_at")]
         public DateTime CreatedAt { get; set; }
